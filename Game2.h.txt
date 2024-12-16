@@ -1,0 +1,232 @@
+#pragma once
+#include <iostream>
+#include <string>
+#include <cstdlib>
+#include <limits>
+#include "BoardGame_Classes.h"
+using namespace std;
+
+class FourInARowBoard : public Board<char> {
+private:
+    char** board;
+    int rows, columns;
+    int n_moves;
+
+public:
+    FourInARowBoard() {
+        this->rows = 6;
+        this->columns = 7;
+        this->n_moves = 0;
+
+        this->board = new char* [this->rows];
+        for (int i = 0; i < this->rows; i++) {
+            this->board[i] = new char[this->columns];
+            for (int j = 0; j < this->columns; j++) {
+                this->board[i][j] = 0;
+            }
+        }
+    }
+
+    ~FourInARowBoard() {
+        for (int i = 0; i < this->rows; i++) {
+            delete[] this->board[i];
+        }
+        delete[] this->board;
+    }
+
+    bool update_board(int x, int y, char mark) {
+        if (y < 0 || y >= this->columns || x != 0) {
+            return false;
+        }
+
+        for (int i = this->rows - 1; i >= 0; i--) {
+            if (this->board[i][y] == 0) {
+                this->board[i][y] = mark;
+                this->n_moves++;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    void display_board() {
+        for (int i = 0; i < this->rows; i++) {
+            cout << "========================================================\n";
+            cout << "|";
+            for (int j = 0; j < this->columns; j++) {
+                if (this->board[i][j] != 0) {
+                    cout << "   " << this->board[i][j] << "   |";
+                }
+                else {
+                    cout << "       |";
+                }
+            }
+            cout << endl;
+        }
+        cout << "========================================================\n";
+        for (int j = 0; j < this->columns; j++) {
+            cout << "   " << j << "    ";
+        }
+        cout << "\n";
+    }
+
+    bool is_win() {
+        for (int i = 0; i < this->rows; i++) {
+            for (int j = 0; j < this->columns; j++) {
+                if (board[i][j] != 0) {
+                    char mark = board[i][j];
+
+                    if (j + 3 < this->columns &&
+                        board[i][j + 1] == mark &&
+                        board[i][j + 2] == mark &&
+                        board[i][j + 3] == mark) {
+                        return true;
+                    }
+
+                    if (i + 3 < this->rows &&
+                        board[i + 1][j] == mark &&
+                        board[i + 2][j] == mark &&
+                        board[i + 3][j] == mark) {
+                        return true;
+                    }
+
+                    if (i + 3 < this->rows && j + 3 < this->columns &&
+                        board[i + 1][j + 1] == mark &&
+                        board[i + 2][j + 2] == mark &&
+                        board[i + 3][j + 3] == mark) {
+                        return true;
+                    }
+
+                    if (i + 3 < this->rows && j - 3 >= 0 &&
+                        board[i + 1][j - 1] == mark &&
+                        board[i + 2][j - 2] == mark &&
+                        board[i + 3][j - 3] == mark) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    bool is_draw() {
+        return (this->n_moves == this->rows * this->columns && !is_win());
+    }
+
+    bool game_is_over() {
+        return is_win() || is_draw();
+    }
+};
+
+class FourInARowHumanPlayer : public Player<char> {
+public:
+    FourInARowHumanPlayer(string n, char symbol) : Player<char>(n, symbol) {}
+
+    void getmove(int& x, int& y) {
+        cout << this->getname() << "'s turn:\n";
+
+        while (true) {
+            cout << "Enter the COLUMN (0 to 6): ";
+            cin >> y;
+
+            if (cin.fail() || y < 0 || y > 6) {
+                cout << "Invalid column. Please enter a value between 0 and 6.\n";
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            }
+            else {
+                x = 0;
+                break;
+            }
+        }
+    }
+};
+
+class FourInARowComputerPlayer : public Player<char> {
+public:
+    FourInARowComputerPlayer(string name, char symbol) : Player<char>(name, symbol) {}
+
+    void getmove(int& x, int& y) {
+        x = 0;
+        y = rand() % 7;
+
+        cout << this->getname() << " chooses COLUMN: " << y << "\n";
+    }
+};
+
+void setupPlayer(string& player_Name, int& player_Type, char player_Symbol, Player<char>*& player) {
+    cout << "Enter Player " << player_Symbol << " name: ";
+    cin >> player_Name;
+
+    while (true) {
+        cout << "Choose Player " << player_Symbol << " type:\n";
+        cout << "1. Human\n";
+        cout << "2. Random Computer\n";
+
+        cin >> player_Type;
+
+        if (cin.fail() || (player_Type != 1 && player_Type != 2)) {
+            cout << "Invalid choice. Please enter 1 or 2.\n";
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        }
+        else {
+            break;
+        }
+    }
+
+    if (player_Type == 1) {
+        player = new FourInARowHumanPlayer(player_Name, player_Symbol);
+    }
+    else {
+        player = new FourInARowComputerPlayer(player_Name, player_Symbol);
+    }
+}
+
+void functionFromFile2() {
+    srand(static_cast<unsigned int>(time(0)));
+
+    cout << "Welcome to Four in a Row!" << endl;
+
+    string player_X_Name, player_O_Name;
+    int player_X_Type, player_O_Type;
+
+    Player<char>* player_X;
+    Player<char>* player_O;
+
+    setupPlayer(player_X_Name, player_X_Type, 'X', player_X);
+    setupPlayer(player_O_Name, player_O_Type, 'O', player_O);
+
+    FourInARowBoard board;
+
+    Player<char>* currentPlayer = player_X;
+    while (!board.game_is_over()) {
+        board.display_board();
+
+        int x, y;
+
+        currentPlayer->getmove(x, y);
+
+        if (board.update_board(x, y, currentPlayer->getsymbol())) {
+            if (board.is_win()) {
+                board.display_board();
+                cout << currentPlayer->getname() << " wins!" << endl;
+                break;
+            }
+            else if (board.is_draw()) {
+                board.display_board();
+                cout << "It's a draw!" << endl;
+                break;
+            }
+
+            currentPlayer = (currentPlayer == player_X) ? player_O : player_X;
+        }
+        else {
+            cout << "Invalid move. Try again." << endl;
+        }
+    }
+
+    delete player_X;
+    delete player_O;
+}

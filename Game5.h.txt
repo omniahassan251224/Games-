@@ -1,0 +1,284 @@
+#pragma once
+#include <iostream>
+#include <vector>
+#include <numeric>
+#include <limits>
+#include "BoardGame_Classes.h"
+#include <algorithm>
+
+using namespace std;
+
+class NumericalTicTacToeBoard : public Board<int> {
+private:
+    int** board;
+    vector<int> used_numbers;
+    int rows, columns;
+
+public:
+    NumericalTicTacToeBoard() {
+        rows = columns = 3;
+        board = new int* [rows];
+        for (int i = 0; i < rows; i++) {
+            board[i] = new int[columns];
+            fill(board[i], board[i] + columns, 0);
+        }
+        n_moves = 0;
+    }
+
+    ~NumericalTicTacToeBoard() {
+        for (int i = 0; i < rows; i++) {
+            delete[] board[i];
+        }
+        delete[] board;
+    }
+
+    bool update_board(int x, int y, int number) {
+        if (x >= 0 && x < rows && y >= 0 && y < columns && board[x][y] == 0 &&
+            find(used_numbers.begin(), used_numbers.end(), number) == used_numbers.end()) {
+            board[x][y] = number;
+            used_numbers.push_back(number);
+            n_moves++;
+            return true;
+        }
+        return false;
+    }
+
+    void display_board() {
+        for (int i = 0; i < rows; i++) {
+            cout << "================================\n";
+            for (int j = 0; j < columns; j++) {
+                if (board[i][j] != 0) {
+                    cout << "|   " << board[i][j] << "   ";
+                }
+                else {
+                    cout << "| (" << i << "," << j << ") ";
+                }
+            }
+            cout << "|\n";
+        }
+        cout << "================================\n\n";
+    }
+
+    bool is_win() {
+        for (int i = 0; i < rows; i++) {
+            int sum = 0;
+            int count = 0;
+            for (int j = 0; j < columns; j++) {
+                if (board[i][j] != 0) {
+                    sum += board[i][j];
+                    count++;
+                }
+            }
+            if (count == 3 && sum == 15) {
+                return true;
+            }
+        }
+
+        for (int i = 0; i < columns; i++) {
+            int sum = 0;
+            int count = 0;
+            for (int j = 0; j < rows; j++) {
+                if (board[j][i] != 0) {
+                    sum += board[j][i];
+                    count++;
+                }
+            }
+            if (count == 3 && sum == 15) {
+                return true;
+            }
+        }
+
+        int sum_diag1 = 0, sum_diag2 = 0;
+        int count_diag1 = 0, count_diag2 = 0;
+        for (int i = 0; i < rows; i++) {
+            if (board[i][i] != 0) {
+                sum_diag1 += board[i][i];
+                count_diag1++;
+            }
+            if (board[i][rows - i - 1] != 0) {
+                sum_diag2 += board[i][rows - i - 1];
+                count_diag2++;
+            }
+        }
+
+        if (count_diag1 == 3 && sum_diag1 == 15) {
+            return true;
+        }
+        if (count_diag2 == 3 && sum_diag2 == 15) {
+            return true;
+        }
+
+        return false;
+    }
+
+    bool is_draw() {
+        return (n_moves == 9 && !is_win());
+    }
+
+    bool game_is_over() {
+        return is_win() || is_draw();
+    }
+};
+
+class NumericalTicTacToeHumanPlayer : public Player<int> {
+public:
+    NumericalTicTacToeHumanPlayer(string n, int symbol) : Player<int>(n, symbol) {}
+
+    void getmove(int& x, int& y) {
+        cout << this->getname() << "'s turn (" << this->getsymbol() << "):\n";
+
+        while (true) {
+            cout << "Enter your ROW: ";
+            cin >> x;
+
+            if (cin.fail() || x < 0 || x > 2) {
+                cout << "Invalid row. Please enter 0, 1, or 2.\n";
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            }
+            else {
+                break;
+            }
+        }
+
+        while (true) {
+            cout << "Enter your COLUMN: ";
+            cin >> y;
+
+            if (cin.fail() || y < 0 || y > 2) {
+                cout << "Invalid column. Please enter 0, 1, or 2.\n";
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            }
+            else {
+                break;
+            }
+        }
+    }
+
+    void getmoveWithNumber(int& x, int& y, int& number) {
+        getmove(x, y);
+
+        while (true) {
+            cout << "Enter your NUMBER: ";
+            cin >> number;
+
+            if (cin.fail() || number <= 0 || number > 9 || (number % 2 != getsymbol() % 2)) {
+                cout << "Invalid number. Enter a unique odd/even number.\n";
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            }
+            else {
+                break;
+            }
+        }
+    }
+};
+
+class NumericalTicTacToeComputerPlayer : public Player<int> {
+public:
+    NumericalTicTacToeComputerPlayer(string n, int symbol) : Player<int>(n, symbol) {}
+
+    void getmove(int& x, int& y) {
+        x = rand() % 3;
+        y = rand() % 3;
+    }
+
+    void getmoveWithNumber(int& x, int& y, int& number) {
+        getmove(x, y);
+        number = (this->getsymbol() % 2 == 0) ? (2 + rand() % 5 * 2) : (1 + rand() % 5 * 2);
+
+        cout << this->getname() << " Chooses: \n";
+        cout << "ROW: " << x << "\n";
+        cout << "COLUMN: " << y << "\n";
+        cout << "NUMBER: " << number << "\n";
+    }
+};
+
+void setupPlayer(Player<int>*& player, string& playerName, int& playerType, int symbol) {
+
+    if (symbol == 1) {
+        cout << "Enter player 1 name  use odd number (1,3,5,7,9): ";
+        cin >> playerName;
+    }
+    else {
+        cout << "Enter player 2 name use even number (2,4,6,8): ";
+        cin >> playerName;
+    }
+    while (true) {
+        cout << "Choose Player " << symbol << " type:\n";
+        cout << "1. Human\n";
+        cout << "2. Random Computer\n";
+
+        cin >> playerType;
+
+        if (playerType == 1) {
+            player = new NumericalTicTacToeHumanPlayer(playerName, symbol);
+            break;
+        }
+        else if (playerType == 2) {
+            player = new NumericalTicTacToeComputerPlayer(playerName, symbol);
+            break;
+        }
+        else {
+            cout << "Invalid input. Please enter 1 for Human or 2 for Computer.\n";
+        }
+    }
+}
+
+void functionFromFile5() {
+    srand(static_cast<unsigned int>(time(0)));
+
+    cout << "Welcome to Numerical Tic-Tac-Toe!" << endl;
+
+    string player1_Name, player2_Name;
+    int player1_Type, player2_Type;
+
+    Player<int>* player1 = nullptr;
+    Player<int>* player2 = nullptr;
+
+    setupPlayer(player1, player1_Name, player1_Type, 1);
+    setupPlayer(player2, player2_Name, player2_Type, 2);
+
+    NumericalTicTacToeBoard board;
+
+    Player<int>* currentPlayer = player1;
+    while (!board.game_is_over()) {
+        board.display_board();
+
+        int x, y, number;
+
+
+        if (dynamic_cast<NumericalTicTacToeHumanPlayer*>(currentPlayer)) {
+            dynamic_cast<NumericalTicTacToeHumanPlayer*>(currentPlayer)->getmoveWithNumber(x, y, number);
+        }
+        else {
+            dynamic_cast<NumericalTicTacToeComputerPlayer*>(currentPlayer)->getmoveWithNumber(x, y, number);
+        }
+
+
+        if (board.update_board(x, y, number)) {
+            if (board.is_win()) {
+                board.display_board();
+                cout << currentPlayer->getname() << " wins!" << endl;
+                break;
+            }
+            else if (board.is_draw()) {
+                board.display_board();
+                cout << "It's a draw!" << endl;
+                break;
+            }
+
+
+            currentPlayer = (currentPlayer == player1) ? player2 : player1;
+        }
+        else {
+            cout << "Invalid move. Try again." << endl;
+        }
+    }
+
+
+    delete player1;
+    delete player2;
+
+}

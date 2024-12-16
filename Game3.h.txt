@@ -1,0 +1,192 @@
+#pragma once
+#include <iostream>
+#include <string>
+#include <cstdlib>
+#include <set>
+#include <utility>
+#include <ctime> 
+#include "BoardGame_Classes.h"
+
+using namespace std;
+
+class FiveByFiveBoard : public Board<char> {
+private:
+    static const int SIZE = 5;
+    char board[SIZE][SIZE];
+    int Player1ThreeInARow = 0;
+    int Player2ThreeInARow = 0;
+    int n_moves = 0;
+
+    bool checkThreeInRow(int r, int c, int dr, int dc, char symbol) {
+        for (int i = 0; i < 3; ++i) {
+            if (r < 0 || c < 0 || r >= SIZE || c >= SIZE || board[r][c] != symbol)
+                return false;
+            r += dr;
+            c += dc;
+        }
+        return true;
+    }
+
+    int countThreeInRows(char symbol) {
+        set<pair<int, int>> counted;
+        int count = 0;
+
+        for (int r = 0; r < SIZE; ++r) {
+            for (int c = 0; c < SIZE; ++c) {
+                if (board[r][c] == symbol) {
+                    if (checkThreeInRow(r, c, 0, 1, symbol)) ++count;
+                    if (checkThreeInRow(r, c, 1, 0, symbol)) ++count;
+                    if (checkThreeInRow(r, c, 1, 1, symbol)) ++count;
+                    if (checkThreeInRow(r, c, 1, -1, symbol)) ++count;
+                }
+            }
+        }
+        return count;
+    }
+
+public:
+    FiveByFiveBoard() {
+        rows = columns = SIZE;
+        for (int i = 0; i < SIZE; ++i)
+            for (int j = 0; j < SIZE; ++j)
+                board[i][j] = '.';
+    }
+
+    bool update_board(int x, int y, char symbol) override {
+        if (x >= 0 && x < SIZE && y >= 0 && y < SIZE && board[x][y] == '.') {
+            board[x][y] = symbol;
+            n_moves++;
+            return true;
+        }
+        return false;
+    }
+
+    void display_board() override {
+        cout << "   ";
+        for (int i = 0; i < SIZE; ++i) cout << i << " ";
+        cout << "\n";
+        for (int i = 0; i < SIZE; ++i) {
+            cout << i << "  ";
+            for (int j = 0; j < SIZE; ++j) {
+                cout << board[i][j] << " ";
+            }
+            cout << "\n";
+        }
+    }
+
+    bool is_win() override {
+        return n_moves >= 24;
+    }
+
+    bool is_draw() override {
+        Player1ThreeInARow = countThreeInRows('X');
+        Player2ThreeInARow = countThreeInRows('O');
+        return false;
+    }
+
+    bool game_is_over() override {
+        return is_draw() || is_win();
+    }
+
+    int getPlayer1Score() { return Player1ThreeInARow; }
+    int getPlayer2Score() { return Player2ThreeInARow; }
+};
+
+class TicPlayer : public Player<char> {
+public:
+    TicPlayer(string name, char symbol) : Player(name, symbol) {}
+
+    void getmove(int& x, int& y) override {
+        cout << " (" << symbol << "), enter your move (row and column): ";
+        cin >> x >> y;
+    }
+};
+
+class RandomPlayerlic : public Player<char> {
+public:
+    RandomPlayerlic(string name, char symbol) : Player(name, symbol) {
+        srand(time(nullptr));
+    }
+
+    void getmove(int& x, int& y) override {
+        x = rand() % 5;
+        y = rand() % 5;
+        cout << " (" << symbol << ") computer at (" << x << ", " << y << ")" << endl;
+    }
+};
+
+namespace Game3 {
+    Player<char>* createPlayer(int playerNumber, char symbol, int choice, std::string name) {
+        if (choice == 1) {
+            return new TicPlayer(name, symbol);
+        }
+        else {
+            name = "Computer " + std::to_string(playerNumber);
+            return new RandomPlayerlic(name, symbol);
+        }
+    }
+}
+
+void functionFromFile3() {
+    FiveByFiveBoard board;
+
+    cout << "Welcome to 5*5 Tic-Tac-Toe!\n";
+    Player<char>* players[2];
+
+    cout << "Is Player 1 a Human (1) or Computer (2)? Enter choice: ";
+    int choice1;
+    cin >> choice1;
+
+    string name1;
+    if (choice1 == 1) {
+        cout << "Enter name for Player 1: ";
+        cin >> name1;
+    }
+    else {
+        name1 = "Computer 1";
+    }
+
+    char symbol1;
+    cout << "Enter symbol for Player 1 (e.g., X, O): ";
+    cin >> symbol1;
+
+    players[0] = Game3::createPlayer(1, symbol1, choice1, name1);
+
+    cout << "Is Player 2 a Human (1) or Computer (2)? Enter choice: ";
+    int choice2;
+    cin >> choice2;
+
+    string name2;
+    if (choice2 == 1) {
+        cout << "Enter name for Player 2: ";
+        cin >> name2;
+    }
+    else {
+        name2 = "Computer 2";
+    }
+
+    char symbol2;
+    cout << "Enter symbol for Player 2 (e.g., X, O): ";
+    cin >> symbol2;
+
+    players[1] = Game3::createPlayer(2, symbol2, choice2, name2);
+
+    string temp = name1;
+    name1 = name2;
+    name2 = temp;
+
+    delete players[0];
+    delete players[1];
+    players[0] = Game3::createPlayer(1, symbol1, choice1, name1);
+    players[1] = Game3::createPlayer(2, symbol2, choice2, name2);
+
+    players[0]->setBoard(&board);
+    players[1]->setBoard(&board);
+
+    GameManager<char>* manager = new GameManager<char>(&board, players);
+    manager->run();
+    delete manager;
+
+    delete players[0];
+    delete players[1];
+}

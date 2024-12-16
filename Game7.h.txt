@@ -1,0 +1,371 @@
+#pragma once
+#include <iostream>
+#include <string>
+#include <cstdlib>
+#include <ctime>
+#include "BoardGame_Classes.h"
+using namespace std;
+
+class fourBYfourTicTacToe : public Board<char> {
+public:
+    int rows = 4;
+    int columns = 4;
+    char** board;
+    char currentPlayer;
+
+    fourBYfourTicTacToe() {
+        currentPlayer = 'X';
+        board = new char* [rows];
+        for (int r = 0; r < rows; r++) {
+            board[r] = new char[columns];
+            for (int c = 0; c < columns; c++) {
+                board[r][c] = ' ';
+                if (r == 0) board[r][c] = (c % 2 == 0) ? 'O' : 'X';
+                else if (r == 3) board[r][c] = (c % 2 == 0) ? 'X' : 'O';
+            }
+        }
+    }
+
+    char** getBoard() const {
+        return board;
+    }
+
+    ~fourBYfourTicTacToe() {
+        for (int r = 0; r < rows; r++) {
+            delete[] board[r];
+        }
+        delete[] board;
+    }
+
+    void display_board() override {
+        cout << "============================================================" << endl;
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < columns; c++) {
+
+                cout << "   (" << r << "," << c << ") (" << (board[r][c] == ' ' ? " " : string(1, board[r][c])) << ")  ";
+
+                if (c < columns + 1) cout << "|";
+            }
+            cout << endl;
+            if (r < rows + 1) cout << "============================================================" << endl;
+        }
+    }
+
+    bool update_board(int x, int y, char symbol) override {
+        int OLD_X = x / columns;
+        int OLD_Y = x % columns;
+        int NEW_X = y / columns;
+        int NEW_Y = y % columns;
+        return update_board(OLD_X, OLD_Y, NEW_X, NEW_Y);
+    }
+    bool update_board(int OLD_X, int OLD_Y, int NEW_X, int NEW_Y) {
+        while (true) {
+            if (OLD_X < 0 || OLD_X >= rows || OLD_Y < 0 || OLD_Y >= columns) {
+                cout << "Wrong old position. Try again." << endl;
+                return false;
+            }
+            if (board[OLD_X][OLD_Y] != currentPlayer) {
+                cout << "Wrong old position. You don't own this piece. Try again." << endl;
+                return false;
+            }
+            if (NEW_X < 0 || NEW_X >= rows || NEW_Y < 0 || NEW_Y >= columns) {
+                cout << "Wrong new position. Try again." << endl;
+                return false;
+            }
+            if (board[NEW_X][NEW_Y] != ' ') {
+                cout << "Wrong new position. The square is already occupied. Try again." << endl;
+                return false;
+            }
+            if ((OLD_X != NEW_X && OLD_Y != NEW_Y) || abs(OLD_X - NEW_X) > 1 || abs(OLD_Y - NEW_Y) > 1) {
+                cout << "Wrong move. You can move one square horizontally or vertically. Try again." << endl;
+                return false;
+            }
+
+            board[NEW_X][NEW_Y] = board[OLD_X][OLD_Y];
+            board[OLD_X][OLD_Y] = ' ';
+            return true;
+        }
+    }
+
+    bool is_win() override {
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < columns - 2; c++) {
+                if (board[r][c] == currentPlayer && board[r][c + 1] == currentPlayer && board[r][c + 2] == currentPlayer)
+                    return true;
+            }
+        }
+        for (int c = 0; c < columns; c++) {
+            for (int r = 0; r < rows - 2; r++) {
+                if (board[r][c] == currentPlayer && board[r + 1][c] == currentPlayer && board[r + 2][c] == currentPlayer)
+                    return true;
+            }
+        }
+        for (int r = 0; r < rows - 2; r++) {
+            for (int c = 0; c < columns - 2; c++) {
+                if (board[r][c] == currentPlayer && board[r + 1][c + 1] == currentPlayer && board[r + 2][c + 2] == currentPlayer)
+                    return true;
+            }
+        }
+        for (int r = 0; r < rows - 2; r++) {
+            for (int c = columns - 1; c >= 2; c--) {
+                if (board[r][c] == currentPlayer && board[r + 1][c - 1] == currentPlayer && board[r + 2][c - 2] == currentPlayer)
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    bool game_is_over() override {
+        if (is_win()) return true;
+
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < columns; c++) {
+                if (board[r][c] == ' ') return false;
+            }
+        }
+        return true;
+    }
+    bool is_draw() {
+        return true;
+    }
+    char getCurrentPlayer() const {
+        return currentPlayer;
+    }
+};
+
+
+class HumanPlayer : public Player<char> {
+public:
+
+    HumanPlayer(const string& name, char symbol) : Player(name, symbol) {}
+
+    HumanPlayer(char symbol) : Player(symbol) {}
+
+    void getmove(int& OLD_X, int& OLD_Y) override {
+        bool validInput = false;
+        while (!validInput) {
+            cout << "Enter ROW and COLUMN of the token you want to move (0 to 3): ";
+            string input;
+            cin >> input;
+
+            try {
+                OLD_X = stoi(input);
+                cin >> input;
+                OLD_Y = stoi(input);
+                if (OLD_X >= 0 && OLD_X <= 3 && OLD_Y >= 0 && OLD_Y <= 3) {
+                    validInput = true;
+                }
+                else {
+                    cout << "Wrong input. Please enter numbers between 0 and 3." << endl;
+                }
+            }
+            catch (...) {
+                cout << "Wrong input. Please enter numbers only." << endl;
+            }
+        }
+    }
+
+
+
+    void getFullMove(int& OLD_X, int& OLD_Y, int& NEW_X, int& NEW_Y) {
+        getmove(OLD_X, OLD_Y);
+        bool validInput = false;
+        while (!validInput) {
+            cout << "Enter ROW and COLUMN where you want to move it (0 to 3): ";
+            string input;
+            cin >> input;
+
+            try {
+                NEW_X = stoi(input);
+                cin >> input;
+                NEW_Y = stoi(input);
+                if (NEW_X >= 0 && NEW_X <= 3 && NEW_Y >= 0 && NEW_Y <= 3) {
+                    validInput = true;
+                }
+                else {
+                    cout << "Wrong input. Please enter numbers between 0 and 3." << endl;
+                }
+            }
+            catch (...) {
+                cout << "Wrong input. Please enter numbers only." << endl;
+            }
+        }
+    }
+
+
+};
+
+class fourBYfourTicTacToeComputer : public Player <char>
+{
+private:
+    fourBYfourTicTacToe& game;
+public:
+    fourBYfourTicTacToeComputer(char symbol, fourBYfourTicTacToe& game)
+        : Player("Computer", symbol), game(game) {}
+    void getmove(int& x, int& y) override
+    {
+        bool validMove = false;
+
+        while (!validMove)
+        {
+            int OLD_X = rand() % 4;
+            int OLD_Y = rand() % 4;
+
+            if (game.board[OLD_X][OLD_Y] == symbol)
+            {
+                int NEW_X = rand() % 4;
+                int NEW_Y = rand() % 4;
+
+                if (game.board[NEW_X][NEW_Y] == ' ' && (abs(OLD_X - NEW_X) <= 1 && abs(OLD_Y - NEW_Y) <= 1))
+                {
+                    x = NEW_X;
+                    y = NEW_Y;
+                    validMove = true;
+                }
+            }
+        }
+    }
+
+    void getFullMove(int& OLD_X, int& OLD_Y, int& NEW_X, int& NEW_Y)
+    {
+        bool validMove = false;
+
+        while (!validMove)
+        {
+            OLD_X = rand() % 4;
+            OLD_Y = rand() % 4;
+
+            if (game.board[OLD_X][OLD_Y] == symbol)
+            {
+                NEW_X = rand() % 4;
+                NEW_Y = rand() % 4;
+
+                if (game.board[NEW_X][NEW_Y] == ' ' && (abs(OLD_X - NEW_X) <= 1 && abs(OLD_Y - NEW_Y) <= 1))
+                {
+                    validMove = true;
+
+                    cout << "Computer moves token from (" << OLD_X << ", " << OLD_Y
+                        << ") to (" << NEW_X << ", " << NEW_Y << ")" << endl;
+                }
+            }
+        }
+    }
+};
+void functionFromFile7() {
+    srand(time(0));
+
+
+    fourBYfourTicTacToe game;
+
+
+    string playerXName, playerOName;
+    int choice;
+    HumanPlayer* playerXHuman = nullptr;
+    HumanPlayer* playerOHuman = nullptr;
+    fourBYfourTicTacToeComputer* playerXComputer = nullptr;
+    fourBYfourTicTacToeComputer* playerOComputer = nullptr;
+    Player<char>* playerX = nullptr;
+    Player<char>* playerO = nullptr;
+
+
+    cout << "Enter Player X name: ";
+    cin >> playerXName;
+
+    while (true) {
+        cout << "Choose Player X type:\n";
+        cout << "1. Human\n";
+        cout << "2. Random Computer\n";
+        cin >> choice;
+
+        if (cin.fail() || (choice != 1 && choice != 2)) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Wrong choice. Please enter 1 or 2.\n";
+        }
+        else {
+            break;
+        }
+    }
+
+    if (choice == 1) {
+        playerXHuman = new HumanPlayer(playerXName, 'X');
+        playerX = playerXHuman;
+    }
+    else if (choice == 2) {
+        playerXComputer = new fourBYfourTicTacToeComputer('X', game);
+        playerX = playerXComputer;
+    }
+
+
+    cout << "Enter Player O name: ";
+    cin >> playerOName;
+
+    while (true) {
+        cout << "Choose Player O type:\n";
+        cout << "1. Human\n";
+        cout << "2. Random Computer\n";
+        cin >> choice;
+
+        if (cin.fail() || (choice != 1 && choice != 2)) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Wrong choice. Please enter 1 or 2.\n";
+        }
+        else {
+            break;
+        }
+    }
+
+    if (choice == 1) {
+        playerOHuman = new HumanPlayer(playerOName, 'O');
+        playerO = playerOHuman;
+    }
+    else if (choice == 2) {
+        playerOComputer = new fourBYfourTicTacToeComputer('O', game);
+        playerO = playerOComputer;
+    }
+
+
+    cout << "Starting 4x4 Tic Tac Toe Game!\n";
+    game.display_board();
+
+    while (!game.game_is_over()) {
+        Player<char>* currentPlayer = (game.getCurrentPlayer() == 'X') ? playerX : playerO;
+
+        int OLD_X, OLD_Y, NEW_X, NEW_Y;
+        cout << currentPlayer->getsymbol() << "'s Turn (" << (currentPlayer == playerX ? playerXName : playerOName) << "):\n";
+
+        bool validMove = false;
+        do {
+            if (dynamic_cast<HumanPlayer*>(currentPlayer)) {
+                static_cast<HumanPlayer*>(currentPlayer)->getFullMove(OLD_X, OLD_Y, NEW_X, NEW_Y);
+            }
+            else if (dynamic_cast<fourBYfourTicTacToeComputer*>(currentPlayer)) {
+                static_cast<fourBYfourTicTacToeComputer*>(currentPlayer)->getFullMove(OLD_X, OLD_Y, NEW_X, NEW_Y);
+            }
+
+            validMove = game.update_board(OLD_X, OLD_Y, NEW_X, NEW_Y);
+        } while (!validMove);
+
+        game.display_board();
+
+        if (game.is_win()) {
+            if (game.getCurrentPlayer() == 'X') {
+                cout << playerXName << " Wins! Congratulations :) \n";
+            }
+            else if (game.getCurrentPlayer() == 'O') {
+                cout << playerOName << " Wins! Congratulations :) \n";
+            }
+            break;
+        }
+
+
+        game.currentPlayer = (game.getCurrentPlayer() == 'X') ? 'O' : 'X';
+    }
+
+
+    delete playerXHuman;
+    delete playerOHuman;
+    delete playerXComputer;
+    delete playerOComputer;
+}

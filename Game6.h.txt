@@ -1,0 +1,158 @@
+#pragma once
+#include "BoardGame_Classes.h"
+#include <iostream>
+#include "Game3.h"
+using namespace std;
+
+class Misere_TicTacToe_Board : public Board<char> {
+public:
+    Misere_TicTacToe_Board(int r = 3, int c = 3) {
+        rows = r;
+        columns = c;
+        n_moves = 0;
+        board = new char* [rows];
+        for (int i = 0; i < rows; ++i) {
+            board[i] = new char[columns];
+            for (int j = 0; j < columns; ++j)
+                board[i][j] = ' ';
+        }
+    }
+
+    bool update_board(int x, int y, char symbol) override {
+        if (x >= 0 && x < rows && y >= 0 && y < columns && board[x][y] == ' ') {
+            board[x][y] = symbol;
+            n_moves++;
+            return true;
+        }
+        return false;
+    }
+
+    void display_board() override {
+        for (int i = 0; i < rows; ++i) {
+            for (int j = 0; j < columns; ++j) {
+                cout << board[i][j];
+                if (j < columns - 1) cout << " | ";
+            }
+            cout << endl;
+            if (i < rows - 1) cout << "---------" << endl;
+        }
+    }
+
+    bool is_win() override {
+        for (int i = 0; i < rows; ++i) {
+            if (board[i][0] != ' ' && board[i][0] == board[i][1] && board[i][1] == board[i][2])
+                return true;
+        }
+        for (int j = 0; j < columns; ++j) {
+            if (board[0][j] != ' ' && board[0][j] == board[1][j] && board[1][j] == board[2][j])
+                return true;
+        }
+        if (board[0][0] != ' ' && board[0][0] == board[1][1] && board[1][1] == board[2][2])
+            return true;
+        if (board[0][2] != ' ' && board[0][2] == board[1][1] && board[1][1] == board[2][0])
+            return true;
+
+        return false;
+    }
+
+    bool is_draw() override {
+        return n_moves == rows * columns && !is_win();
+    }
+
+    bool game_is_over() override {
+        return is_win() || is_draw();
+    }
+
+    ~Misere_TicTacToe_Board() {
+        for (int i = 0; i < rows; ++i)
+            delete[] board[i];
+        delete[] board;
+    }
+};
+
+class MiserePlayer : public Player<char> {
+public:
+    MiserePlayer(string name, char symbol) : Player(name, symbol) {}
+
+    void getmove(int& x, int& y) override {
+        cout << " (" << symbol << "), enter your move (row and column): ";
+        cin >> x >> y;
+    }
+};
+
+class SomeOtherClass {
+public:
+    void useRandomPlayerlic();
+};
+
+namespace Game6 {
+    Player<char>* createPlayer(int playerNumber, char symbol, int choice, std::string name) {
+        if (choice == 1) {
+            return new MiserePlayer(name, symbol);
+        }
+        else {
+            name = "Computer " + std::to_string(playerNumber);
+            return new RandomPlayerlic(name, symbol);
+        }
+    }
+}
+
+void functionFromFile6() {
+    Misere_TicTacToe_Board board;
+
+    cout << "Welcome to Misere Tic-Tac-Toe!\n";
+    Player<char>* players[2];
+
+    cout << "Is Player 1 a Human (1) or Computer (2)? Enter choice: ";
+    int choice1;
+    cin >> choice1;
+
+    string name1;
+    if (choice1 == 1) {
+        cout << "Enter name for Player 1: ";
+        cin >> name1;
+    }
+    else {
+        name1 = "Computer 1";
+    }
+
+    char symbol1;
+    cout << "Enter symbol for Player 1 (e.g., X, O): ";
+    cin >> symbol1;
+
+    players[0] = Game6::createPlayer(1, symbol1, choice1, name1);
+
+    cout << "Is Player 2 a Human (1) or Computer (2)? Enter choice: ";
+    int choice2;
+    cin >> choice2;
+
+    string name2;
+    if (choice2 == 1) {
+        cout << "Enter name for Player 2: ";
+        cin >> name2;
+    }
+    else {
+        name2 = "Computer 2";
+    }
+
+    char symbol2;
+    cout << "Enter symbol for Player 2 (e.g., X, O): ";
+    cin >> symbol2;
+
+    while (symbol2 == symbol1) {
+        cout << "Player 2's symbol cannot be the same as Player 1's. Enter a different symbol: ";
+        cin >> symbol2;
+    }
+
+    players[1] = Game6::createPlayer(2, symbol2, choice2, name2);
+
+    players[0]->setBoard(&board);
+    players[1]->setBoard(&board);
+
+    GameManager<char>* manager = new GameManager<char>(&board, players);
+    manager->run();
+
+    delete manager;
+    delete players[0];
+    delete players[1];
+}

@@ -1,0 +1,251 @@
+#pragma once
+#include <iostream>
+#include <string>
+#include <cstdlib>
+#include <ctime> 
+#include "BoardGame_Classes.h"
+
+using namespace std;
+
+class PyramidTicTacToeBoard : public Board<char> {
+public:
+    char** board;
+    int rows, columns;
+
+    PyramidTicTacToeBoard() {
+        rows = 3;
+        columns = 5;
+        board = new char* [rows];
+        for (int i = 0; i < rows; i++) {
+            board[i] = new char[2 * i + 1];
+            for (int j = 0; j < 2 * i + 1; j++) {
+                board[i][j] = ' ';
+            }
+        }
+    }
+
+    ~PyramidTicTacToeBoard() {
+        for (int i = 0; i < rows; i++) {
+            delete[] board[i];
+        }
+        delete[] board;
+    }
+
+    bool update_board(int x, int y, char sign) override {
+        if (x >= 0 && x < rows && y >= 0 && y < 2 * x + 1 && board[x][y] == ' ') {
+            board[x][y] = sign;
+            n_moves++;
+            return true;
+        }
+        return false;
+    }
+
+    void display_board()
+    {
+        cout << "=========================================" << endl;
+        for (int i = 0; i < rows; i++)
+        {
+            cout << string((rows - i - 1) * 8, ' ');
+
+            for (int j = 0; j <= 2 * i; j++)
+            {
+                cout << "|";
+                if (board[i][j] != ' ')
+                {
+                    cout << "   " << board[i][j] << "   ";
+                }
+                else
+                {
+                    cout << " (" << i << "," << j << ") ";
+                }
+            }
+            cout << "|" << endl;
+            cout << "=========================================";
+            if (i < rows - 1) {
+                cout << string((rows - i - 1) * 6, ' ');
+                cout << endl;
+            }
+        }
+        cout << endl << endl;
+    }
+
+    bool is_win() override {
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < 2 * r + 1 - 2; c++) {
+                if (board[r][c] != ' ' &&
+                    board[r][c] == board[r][c + 1] &&
+                    board[r][c] == board[r][c + 2]) {
+                    return true;
+                }
+            }
+        }
+        if (board[0][0] != ' ' &&
+            board[0][0] == board[1][2] &&
+            board[0][0] == board[2][4]) {
+            return true;
+        }
+
+        if (board[0][0] != ' ' &&
+            board[0][0] == board[1][0] &&
+            board[0][0] == board[2][0]) {
+            return true;
+        }
+
+        for (int r = 0; r < rows - 2; r++)
+        {
+            for (int c = 0; c < 2 * r + 1; c++)
+            {
+                if (board[r][c] != ' ' &&
+                    board[r][c] == board[r + 1][c + 1] &&
+                    board[r][c] == board[r + 2][c + 2])
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
+
+    bool is_draw() override {
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < 2 * r + 1; c++) {
+                if (board[r][c] == ' ') {
+                    return false;
+                }
+            }
+        }
+        return !is_win();
+    }
+
+    bool game_is_over() override {
+        return is_win() || is_draw();
+    }
+};
+
+class PyramidTicTacToePlayer : public Player<char> {
+public:
+    PyramidTicTacToePlayer(string n, char symbol) : Player(n, symbol) {}
+
+    void getmove(int& x, int& y) override {
+        cout << "Player " << name << " (" << symbol << ") " << endl;
+        cout << "Enter ur move (ROW Num): ";
+
+        while (true) {
+            cin >> x;
+            if (cin.fail()) {
+                cin.clear();
+                cin.ignore(INT_MAX, '\n');
+                cout << "Please enter a valid number for ROW: ";
+            }
+            else {
+                break;
+            }
+        }
+
+        cout << "Enter ur move (COLUMN Num): ";
+        while (true) {
+            cin >> y;
+            if (cin.fail()) {
+                cin.clear();
+                cin.ignore(INT_MAX, '\n');
+                cout << "Please enter a valid number for COLUMN: ";
+            }
+            else {
+                break;
+            }
+        }
+        cout << endl;
+    }
+
+};
+
+
+class PyramidTicTacToeComputer : public Player<char> {
+protected:
+    int dimension;
+public:
+    PyramidTicTacToeComputer(string n, char symbol) : Player(n, symbol) {}
+
+    void getmove(int& x, int& y) override {
+        x = rand() % 3;
+        y = rand() % (2 * x + 1);
+        cout << "Computer (" << symbol << ") chooses move: " << x << ", " << y << endl;
+        cout << endl;
+    }
+};
+
+
+// Main game function
+void functionFromFile1() {
+
+    srand(time(0));
+
+    PyramidTicTacToeBoard board;
+    Player<char>* players[2];
+
+    cout << "Welcome to Pyramid Tic-Tac-Toe!" << endl;
+
+    cout << "Enter Player X name: ";
+    string playerXName;
+    cin >> playerXName;
+
+    int playerXType;
+    while (true) {
+        cout << "Choose Player X type:\n";
+        cout << "1. Human\n";
+        cout << "2. Random Computer\n";
+        cout << "Enter your choice: ";
+        if (cin >> playerXType && (playerXType == 1 || playerXType == 2)) {
+            if (playerXType == 1) {
+                players[0] = new PyramidTicTacToePlayer(playerXName, 'X');
+            }
+            else {
+                players[0] = new PyramidTicTacToeComputer(playerXName, 'X');
+            }
+            break;
+        }
+        else {
+            cout << "Wrong choice! Please select 1 or 2.\n";
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        }
+    }
+
+    cout << "Enter Player O name: ";
+    string playerOName;
+    cin >> playerOName;
+
+    int playerOType;
+    while (true) {
+        cout << "Choose Player O type:\n";
+        cout << "1. Human\n";
+        cout << "2. Random Computer\n";
+        cout << "Enter your choice: ";
+        if (cin >> playerOType && (playerOType == 1 || playerOType == 2)) {
+            if (playerOType == 1) {
+                players[1] = new PyramidTicTacToePlayer(playerOName, 'O');
+            }
+            else {
+                players[1] = new PyramidTicTacToeComputer(playerOName, 'O');
+            }
+            break;
+        }
+        else {
+            cout << "Wrong choice! Please select 1 or 2.\n";
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        }
+    }
+
+    players[0]->setBoard(&board);
+    players[1]->setBoard(&board);
+
+    GameManager<char> gameManager(&board, players);
+    gameManager.run();
+
+    delete players[0];
+    delete players[1];
+
+}
+
